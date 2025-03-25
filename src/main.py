@@ -34,6 +34,12 @@ async def welcome(message):
                            reply_markup=keyboard.start, parse_mode='Markdown')
     # после проверки и записи выводим сообщение с именем пользователя и отображаем кнопки
 
+
+@dp.message_handler(content_types=['text'])
+async def get_message(message):
+    if message.text == 'Информация':
+        await bot.send_message(message.chat.id, text = 'Информация\nБот создан специально для обучения', parse_mode='Markdown')
+
 if __name__ == '__main__':
     print('Бот запущен!') # чтобы бот работал всегда с выводом в начале вашего любого текста
 executor.start_polling(dp)
