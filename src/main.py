@@ -12,3 +12,8 @@ import config
 import keyboard
 import logging
 
+storage = MemoryStorage() # FSM
+bot = Bot(token=config.bot_key, parse_mode=types.ParseMode.HTML)
+dp = Dispatcher(bot, storage=storage) # хранилище состояний в оперативной памяти
+
+logging.basicConfig(format=u'%(filename)s [LINE:%(lineno)d] #%(levelname)-8s [%(asctime)s] %(message)s', level=logging.INFO, )
