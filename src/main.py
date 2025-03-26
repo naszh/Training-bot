@@ -18,6 +18,45 @@ dp = Dispatcher(bot, storage=storage) # хранилище состояний в
 
 logging.basicConfig(format=u'%(filename)s [LINE:%(lineno)d] #%(levelname)-8s [%(asctime)s] %(message)s', level=logging.INFO, )
 
+
+class meinfo(StatesGroup):
+    Q1 = State()
+    Q2 = State()
+
+@dp.message_handler(Command("me"), state=None) # команда /me для админа
+async def enter_meinfo(message: types.Message):
+    if message.chat.id == config.admin:
+        await message.answer("начинаем настройку.\n"
+                             "№1 Введите линк на ваш профиль") # бот спрашивает ссылку
+        await meinfo.Q1.set()
+
+@dp.message_handler(state=meinfo.Q1) # как только бот получит ответ на /me
+async def answer_q1(message: types.Message, state: FSMContext):
+    answer = message.text
+    await state.update_data(answer1=answer) # записывает ответ (линк)
+    await message.answer("Линк сохранён. \n"
+                         "№2 Введите текст.")
+    await meinfo.Q2.set()
+
+@dp.message_handler(state=meinfo.Q2) # после того как пришел текст №2
+async def answer_q1(message: types.Message, state: FSMContext):
+    answer = message.text
+    await state.update_data(answer2=answer) # записывает второй ответ
+    await message.answer("Текст сохранён.")
+
+    data = await state.get_data()
+    answer1 = data.get("answer1") # запись ответа в переменную, чтобы сохранить в файл и вывести в след. смс
+    answer2 = data.get("answer2")
+
+    joinedFile = open("link.txt", "w", encoding="utf-8") # utf-8 для того, чтобы записывались смайлики
+    joinedFile.write(str(answer1))
+    joinedFile = open("text.txt", "w", encoding="utf-8")
+    joinedFile.write(str(answer2))
+
+    await message.answer(f'Ваша ссылка на профиль: {answer1}\nВаш текст:\n{answer2}') # вывод линка с текстом
+    await state.finish()
+
+
 @dp.message_handler(Command("start"), state=None) # задаем название команды start
 async def welcome(message):
     joinedFile = open("user.txt", "r") # создаем файл, в который будем записывать id пользователя
