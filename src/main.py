@@ -123,6 +123,14 @@ async def get_message(message):
     if message.text == 'Статистика':
         await bot.send_message(message.chat.id, text='Хочешь посмотреть статистику бота?', reply_markup=keyboard.base, parse_mode='Markdown')
 
+    if message.text == 'Разработчик':
+        link1 = open('link.txt', encoding='utf-8')
+        link = link1.read()
+
+        text1 = open('text.txt', encoding='utf-8')
+        text = text1.read()
+        await bot.send_message(message.chat.id, text=f'Создатель: {link}\n{text}', parse_mode='HTML')
+
 if __name__ == '__main__':
     print('Бот запущен!') # чтобы бот работал всегда с выводом в начале вашего любого текста
 executor.start_polling(dp)
