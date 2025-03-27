@@ -56,6 +56,44 @@ async def answer_q1(message: types.Message, state: FSMContext):
     await message.answer(f'Ваша ссылка на профиль: {answer1}\nВаш текст:\n{answer2}') # вывод линка с текстом
     await state.finish()
 
+class push_photo(StatesGroup):
+    waiting_for_photo = State()
+
+@dp.message_handler(text_contains='Отправить фото', state=None)
+async def enter_photo(message: types.Message):
+    await push_photo.waiting_for_photo.set()  # Установка состояния ожидания фото
+    await message.answer("Пожалуйста, прикрепите фото.")
+
+@dp.message_handler(content_types=['photo'], state=push_photo.waiting_for_photo) # как только бот получит ответ н
+async def save_photo(message: types.Message, state: FSMContext):
+    photo_id = message.photo[-1].file_id  # Берём самое высокое качество фото
+    await state.update_data(photo_id=photo_id)
+    await message.answer("Спасибо! Фото получено. Разошлю его всем пользователям.")
+    # Получаем данные о фото
+    data = await state.get_data()
+    photo_id = data.get('photo_id')
+    print(photo_id)
+
+    receive_users, block_users = 0, 0
+    joinedFile = open('user.txt', 'r')
+    joinedUsers = set()
+    for line in joinedFile:
+        joinedUsers.add(line.strip())
+    joinedFile.close()
+
+    for user in joinedUsers:
+        try:
+            await bot.send_photo(user, photo=photo_id)
+            receive_users += 1
+        except:
+            block_users += 1
+        await asyncio.sleep(0.4)
+    await bot.send_message(message.chat.id, f'*Рассылка была завершена *\n'
+                                            f'получили сообщение: *{receive_users}*\n'
+                                            f'заблокировали бота: *{block_users}*', parse_mode='Markdown')
+    #
+    await state.finish()
+
 
 @dp.message_handler(Command("start"), state=None) # задаем название команды start
 async def welcome(message):
@@ -114,6 +152,16 @@ async def rassilka(message):
                                f'получили сообщение: *{receive_users}*\n'
                                f'заблокировали бота: *{block_users}*', parse_mode='Markdown')
 
+@dp.callback_query_handler(text_contains='id')
+async def join(call: types.CallbackQuery):
+    await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                    text=f'{call.message.chat.id}', parse_mode='Markdown')
+
+
+@dp.callback_query_handler(text_contains='back')
+async def cancel(call: types.CallbackQuery):
+    await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                                text='Вы отменили выбор', parse_mode='Markdown')
 
 @dp.message_handler(content_types=['text'])
 async def get_message(message):
@@ -130,6 +178,12 @@ async def get_message(message):
         text1 = open('text.txt', encoding='utf-8')
         text = text1.read()
         await bot.send_message(message.chat.id, text=f'Создатель: {link}\n{text}', parse_mode='HTML')
+
+    if message.text == 'Покажи пользователя':
+        await bot.send_message(message.chat.id, text='Выбери', reply_markup=keyboard.usr, parse_mode='Markdown')
+
+    # if message.text == 'Отправить фото':
+    #     await bot.send_photo(message.chat.id, open('una.jpg', 'rb'), message.text[message.text.find(' '):])
 
 if __name__ == '__main__':
     print('Бот запущен!') # чтобы бот работал всегда с выводом в начале вашего любого текста
